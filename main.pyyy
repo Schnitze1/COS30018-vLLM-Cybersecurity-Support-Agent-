@@ -1,0 +1,125 @@
+import torch
+import torch_xla.core.xla_model as xm
+import monarch
+import torchforge
+import requests
+import os
+from src.environment import LogSimulator  # <-- Import our new simulator
+
+# --- CONFIGURATION ---
+# The public URL from your ngrok tunnel
+VLLM_BRAIN_URL = "https://coaly-uxorious-caren.ngrok-free.dev" 
+
+# The prompt template for our agent
+# We're asking the model to act as an expert and return ONLY "Normal" or "Attack"
+CYBER_PROMPT_TEMPLATE = """
+<|begin_of_text|><|start_header_id|>user<|end_header_id|>
+You are an expert cybersecurity analyst. Your job is to classify system logs as either 'Normal' or 'Attack'.
+Analyze the following log entry and respond with ONLY the word 'Normal' or the word 'Attack'.
+
+Log: "{log_message}"<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+"""
+
+def test_tpu_connection():
+    """Confirms we can access and use the TPU."""
+    try:
+        device = xm.xla_device()
+        t_cpu = torch.randn(2, 2)
+        t_tpu = t_cpu.to(device)
+        print(f"✅ [TPU Trainer]: Connection SUCCESSFUL. (Device: {device})")
+        return True
+    except Exception as e:
+        print(f"❌ [TPU Trainer]: Connection FAILED: {e}")
+        return False
+
+def test_brain_connection(url):
+    """Confirms we can reach the vLLM server."""
+    try:
+        response = requests.get(f"{url}/docs", timeout=5)
+        if response.status_code == 200:
+            print(f"✅ [vLLM Brain]: Connection SUCCESSFUL. (Server: {url})")
+            return True
+        else:
+            print(f"❌ [vLLM Brain]: Connection FAILED. Status code: {response.status_code}")
+            return False
+    except requests.ConnectionError:
+        print(f"❌ [vLLM Brain]: Connection FAILED. Server not reachable.")
+        return False
+
+def analyze_log_with_brain(log_message):
+    """
+    Sends a single log message to the vLLM brain for analysis.
+    """
+    # 1. Format the prompt using our template
+    prompt = CYBER_PROMPT_TEMPLATE.format(log_message=log_message)
+    
+    # 2. Define the API endpoint (OpenAI-compatible)
+    api_url = f"{VLLM_BRAIN_URL}/v1/chat/completions"
+    
+    # 3. Format the request body
+    body = {
+        "model": "TinyLlama/TinyLlama-1.1B-Chat-v1.0", # Or your Mistral/Gemma model
+        "messages": [
+            {"role": "user", "content": prompt}
+        ],
+        "max_tokens": 5,  # We only need one word: "Normal" or "Attack"
+        "temperature": 0.0
+    }
+    
+    headers = {"Content-Type": "application/json"}
+
+    try:
+        # 4. Send the request to your laptop
+        response = requests.post(api_url, headers=headers, json=body, timeout=30)
+        
+        if response.status_code == 200:
+            data = response.json()
+            # 5. Extract the model's single-word answer
+            answer = data['choices'][0]['message']['content'].strip()
+            return answer
+        else:
+            print(f"    [Brain Error] Status: {response.status_code}, Body: {response.text}")
+            return None
+            
+    except Exception as e:
+        print(f"    [Brain Error] Request failed: {e}")
+        return None
+
+
+def main():
+    """Main entry point for the agent."""
+    print("--- Initializing Cybersecurity Agent System ---")
+    
+    if not test_tpu_connection() or not test_brain_connection(VLLM_BRAIN_URL):
+        print("🛑 System OFFLINE. Please check error messages above.")
+        return
+
+    print("🚀 System is ONLINE. Running first analysis...")
+    print("-----------------------------------------------")
+    
+    # 1. Create our log simulator
+    simulator = LogSimulator()
+    
+    # 2. Get one log to analyze
+    log, label = simulator.get_next_log()
+    true_label = "Attack" if label == 1 else "Normal"
+    
+    print(f"[Agent]  Received log: '{log}'")
+    print(f"[Agent]  Ground Truth: '{true_label}'")
+    
+    # 3. Send the log to the vLLM brain
+    print("[Agent]  Sending to vLLM brain for analysis...")
+    model_prediction = analyze_log_with_brain(log)
+    
+    # 4. Show the result
+    if model_prediction:
+        print(f"[Brain]  Prediction: '{model_prediction}'")
+        
+        # 5. Check if the brain was correct
+        if model_prediction.lower() == true_label.lower():
+            print("✅ [Result] Brain was CORRECT!")
+        else:
+            print("❌ [Result] Brain was INCORRECT!")
+
+if __name__ == "__main__":
+    main()
