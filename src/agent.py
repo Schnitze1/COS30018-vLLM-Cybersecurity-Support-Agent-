@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch_xla.core.xla_model as xm
 
 # This is our agent's 'brain' - a simple PyTorch Neural Network.
-# We don't need the torchforge/monarch wrappers.
 class CyberAgent(nn.Module):
     """
     It will learn to take the vLLM's prediction (and other data)
@@ -11,7 +10,6 @@ class CyberAgent(nn.Module):
     """
     def __init__(self, input_size, output_size):
         super(CyberAgent, self).__init__()
-        # A simple 3-layer network
         self.layer1 = nn.Linear(input_size, 64)
         self.layer2 = nn.Linear(64, 32)
         self.output_layer = nn.Linear(32, output_size)
@@ -27,12 +25,14 @@ def create_agent():
     """
     A helper function to build our agent and move it to the TPU.
     """
-    # Our agent will take 2 inputs:
+    # --- THIS IS THE CHANGE ---
+    # Our agent will now take 3 inputs:
     # 1. The vLLM's 'Normal' prediction confidence
     # 2. The vLLM's 'Attack' prediction confidence
-    input_dim = 2 
+    # 3. The length of the log message
+    input_dim = 3
     
-    # It will have 2 outputs (logits):
+    # It still has 2 outputs (logits):
     # 1. The agent's 'Normal' score
     # 2. The agent's 'Attack' score
     output_dim = 2
@@ -46,7 +46,7 @@ def create_agent():
     # Move the agent to the TPU!
     agent_brain.to(device)
     
-    print(f"✅ [Agent Brain]: Successfully created agent on {device}")
+    print(f"✅ [Agent Brain]: Successfully created agent on {device} (Input size: {input_dim})")
     return agent_brain
 
 # --- This is just for testing the file directly ---
@@ -55,17 +55,16 @@ if __name__ == "__main__":
     try:
         agent = create_agent()
         
-        # Create a dummy input (e.g., vLLM is 90% sure it's 'Normal')
-        dummy_input = torch.tensor([0.9, 0.1], dtype=torch.float32)
+        # Create a dummy input (vLLM: 90% Normal, Log Length: 75)
+        dummy_input = torch.tensor([0.9, 0.1, 75.0], dtype=torch.float32)
         
         # Send the dummy input to the TPU
         dummy_input_tpu = dummy_input.to(xm.xla_device())
         
         # Get the agent's decision
-        # Note: We must wrap it in a 'batch' (the [dummy_input_tpu])
         decision = agent(dummy_input_tpu.unsqueeze(0))
         
-        print(f"✅ [Agent Brain]: Successfully processed input.")
+        print(f"✅ [Agent Brain]: Successfully processed 3-feature input.")
         print(f"    - Input: {dummy_input.tolist()}")
         print(f"    - Output (Logits): {decision.tolist()}")
         
