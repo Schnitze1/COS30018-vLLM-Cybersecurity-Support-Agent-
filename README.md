@@ -1,19 +1,19 @@
 # COS30018-vLLM-Cybersecurity-Support-Agent
 
-A powerful, modular, and extensible support agent framework for cybersecurity, leveraging vLLM for natural language understanding and automated response. This project aims to assist cybersecurity professionals and users by providing intelligent, context-aware support for security incidents, best practices, and system queries.
+Independently developed a powerful, modular, and extensible support agent framework for cybersecurity, leveraging vLLM for natural language understanding and automated response. This project aims to assist cybersecurity professionals and users by providing intelligent, context-aware support for security incidents, best practices, and system queries. This project tested the integration of new AI tools and cloud applications such as TorchForge and high demand Google Cloud TPU services. 
 
 ---
 
 ## Introduction
 
-COS30018-vLLM-Cybersecurity-Support-Agent is designed to act as an intelligent assistant for cybersecurity operations. It utilizes large language models (LLMs) via vLLM to interpret requests, analyze incidents, and provide actionable guidance. This project is suitable for academic environments, research, or integration into enterprise security suites.
+vLLM Cybersecurity Support Agent is designed to act as an intelligent assistant for cybersecurity operations and applies knowledge from COS30018 Intelligent Systems, taught during my Second year at Swinburne University. It applies foundational knowledge of large language models (LLMs) through vLLM integration to interpret requests, analyse incidents, and provide actionable guidance. This project is suitable for academic environments, research, or integration into enterprise security suites.
 
 ---
 
 ## Features
 
 - **vLLM Integration**: Uses vLLM for efficient, scalable, and high-throughput language model inference.
-- **Incident Analysis**: Automatically analyzes and summarizes security incidents.
+- **Incident Analysis**: Automatically analyses and summarizes security incidents.
 - **Knowledge Base Support**: Answers common cybersecurity questions based on structured internal knowledge.
 - **Extensible Plugins**: Add custom response modules for organization-specific workflows or tools.
 - **Contextual Response**: Maintains context across conversations for accurate and tailored advice.
@@ -43,7 +43,7 @@ Follow these steps to set up and use the COS30018-vLLM-Cybersecurity-Support-Age
    Update the `config.yaml` (or equivalent config file) to set your environment variables, API keys, and vLLM model paths.
 
 4. **Run vLLM Server**
-   Start your vLLM backend for language model inference, according to vLLM documentation.
+   Start your vLLM backend for language model inference, according to vLLM documentation, which can be provided if requested.
 
 5. **Start the Support Agent**
    ```bash
@@ -99,7 +99,7 @@ knowledge_base:
 - **PyYAML** (for configuration)
 - **Flask** or similar (for API, if applicable)
 - **Other dependencies** as listed in `requirements.txt`
-- **Sufficient RAM/VRAM** for running large language models
+- **Sufficient RAM/VRAM** for running large language models (Recommended +8GB VRAM for TinyLlama Training)
 - **Network access** for API integrations (optional)
 
 ---
